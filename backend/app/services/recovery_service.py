@@ -17,7 +17,7 @@ async def generate_recovery_recommendation(db: AsyncSession, user: User):
     )
     latest_recov = res_recov.scalars().first()
     if not latest_recov:
-        return "No recovery data available."
+        return "Aucune donnée de récupération disponible."
         
     seven_days_ago = datetime.utcnow() - timedelta(days=7)
     query = (
@@ -30,10 +30,10 @@ async def generate_recovery_recommendation(db: AsyncSession, user: User):
     )
     res_vol = await db.execute(query)
     volumes = res_vol.all()
-    vol_str = ", ".join([f"{v[0].value if hasattr(v[0], 'value') else v[0]}: {v[1]}kg" for v in volumes])
+    vol_str = ", ".join([f"{v[0].value if hasattr(v[0], 'value') else v[0]}: {v[1]}kg" for v in volumes]) or "Faible volume"
     
-    sys_prompt = "You are an expert sports doctor and coach. Based on recovery metrics and recent workout volume, give a personalized recovery recommendation in French. Be concise."
-    user_msg = f"Sleep: {latest_recov.sleep_hours}h. Soreness: {latest_recov.muscle_soreness}/5. Energy: {latest_recov.energy_level}/5. Recent volume: {vol_str}"
+    sys_prompt = "Tu es ForgeFive Coach. En te basant sur les métriques de récupération et le volume de travail récent, donne une recommandation courte, précise et personnalisée en français pour la journée."
+    user_msg = f"Sommeil: {latest_recov.sleep_hours}h (qualité: {latest_recov.sleep_quality}/5). Courbatures: {latest_recov.soreness_level}/5. Énergie: {latest_recov.energy_level}/5. Volume récent par groupe: {vol_str}"
     
     client = GeminiClient()
     return await client.generate_with_system_prompt(sys_prompt, user_msg)

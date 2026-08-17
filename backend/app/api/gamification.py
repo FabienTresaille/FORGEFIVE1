@@ -8,6 +8,7 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.gamification import StreakCounter, Achievement, UserAchievement
 from app.schemas.gamification import StreakCounterResponse, AchievementResponse, UserAchievementResponse
+from app.services import gamification_service
 
 router = APIRouter()
 
@@ -30,12 +31,15 @@ async def get_achievements(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    # Dummy list of user achievements for now
-    return []
+    result = await db.execute(
+        select(UserAchievement)
+        .filter(UserAchievement.user_id == current_user.id)
+    )
+    return result.scalars().all()
 
 @router.get("/attendance-ranking")
 async def get_attendance_ranking(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
-    return []
+    return await gamification_service.get_attendance_ranking(db)
