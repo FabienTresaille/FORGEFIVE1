@@ -12,14 +12,15 @@ __pycache__/
 *.so
 .Python
 env/
-build/
+venv/
+.venv/
+backend/.venv/
+backend/venv/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -28,8 +29,6 @@ wheels/
 .installed.cfg
 *.egg
 .pytest_cache/
-backend/.venv/
-backend/venv/
 
 # Node.js / Frontend
 node_modules/
