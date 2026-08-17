@@ -4,15 +4,15 @@ services:
     container_name: forgefive-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-forgefive}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forgefive_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-forgefive}
     volumes:
       - forgefive_pgdata:/var/lib/postgresql/data
     networks:
       - internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forgefive} -d ${POSTGRES_DB:-forgefive}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -27,20 +27,21 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL}
-      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
-      CORS_ORIGINS: ${CORS_ORIGINS}
-      DOMAIN: ${DOMAIN}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://forgefive:forgefive_secret@db:5432/forgefive}
+      JWT_SECRET: ${JWT_SECRET:-super_secret_jwt_key_for_forgefive}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL:-admin@example.com}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD:-admin123}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://perfs.alsek.fr}
+      DOMAIN: ${DOMAIN:-perfs.alsek.fr}
     networks:
       - internal
       - audit-app_web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vision-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.vision-api.rule=Host(`perfs.alsek.fr`) && PathPrefix(`/api`)"
       - "traefik.http.routers.vision-api.entrypoints=websecure"
+      - "traefik.http.routers.vision-api.tls=true"
       - "traefik.http.routers.vision-api.tls.certresolver=letsencrypt"
       - "traefik.http.routers.vision-api.service=vision-api"
       - "traefik.http.services.vision-api.loadbalancer.server.port=8000"
@@ -54,7 +55,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+        NEXT_PUBLIC_API_URL: https://${DOMAIN:-perfs.alsek.fr}/api
     container_name: forgefive-frontend
     restart: unless-stopped
     depends_on:
@@ -63,8 +64,9 @@ services:
       - audit-app_web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vision.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.vision.rule=Host(`perfs.alsek.fr`)"
       - "traefik.http.routers.vision.entrypoints=websecure"
+      - "traefik.http.routers.vision.tls=true"
       - "traefik.http.routers.vision.tls.certresolver=letsencrypt"
       - "traefik.http.routers.vision.service=vision"
       - "traefik.http.services.vision.loadbalancer.server.port=3000"
