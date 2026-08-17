@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: forgefive-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - forgefive_pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: forgefive-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      ADMIN_INITIAL_EMAIL: ${ADMIN_INITIAL_EMAIL}
+      ADMIN_INITIAL_PASSWORD: ${ADMIN_INITIAL_PASSWORD}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      DOMAIN: ${DOMAIN}
+    networks:
+      - internal
+      - forgefive_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forgefive-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.forgefive-api.entrypoints=websecure"
+      - "traefik.http.routers.forgefive-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.forgefive-api.service=forgefive-api"
+      - "traefik.http.services.forgefive-api.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.forgefive-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.forgefive-api.middlewares=forgefive-api-strip"
+      - "traefik.docker.network=forgefive_web"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: https://${DOMAIN}/api
+    container_name: forgefive-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - forgefive_web
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.forgefive-front.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.forgefive-front.entrypoints=websecure"
+      - "traefik.http.routers.forgefive-front.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.forgefive-front.service=forgefive-front"
+      - "traefik.http.services.forgefive-front.loadbalancer.server.port=3000"
+      - "traefik.http.routers.forgefive-front.priority=1"
+      - "traefik.http.routers.forgefive-api.priority=2"
+      - "traefik.docker.network=forgefive_web"
+
+volumes:
+  forgefive_pgdata:
+    name: forgefive_pgdata
+
+networks:
+  internal:
+    driver: bridge
+  forgefive_web:
+    external: true

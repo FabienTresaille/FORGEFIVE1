@@ -1,0 +1,12 @@
+[
+    {"name": "Développé Couché", "muscle_group": "pectoraux", "type": "force", "description": "L'exercice roi pour les pectoraux."},
+    {"name": "Squat", "muscle_group": "jambes", "type": "force", "description": "L'exercice roi pour les jambes."},
+    {"name": "Soulevé de Terre", "muscle_group": "dos", "type": "force", "description": "L'exercice roi pour le dos et les ischio-jambiers."},
+    {"name": "Traction", "muscle_group": "dos", "type": "force", "description": "Exercice de poids de corps pour le dos."},
+    {"name": "Développé Militaire", "muscle_group": "epaules", "type": "force", "description": "Le meilleur exercice pour les épaules."},
+    {"name": "Curl Biceps", "muscle_group": "bras", "type": "force", "description": "Isolation pour les biceps."},
+    {"name": "Extension Triceps", "muscle_group": "bras", "type": "force", "description": "Isolation pour les triceps."},
+    {"name": "Gainage", "muscle_group": "core", "type": "force", "description": "Renforcement de la sangle abdominale."},
+    {"name": "Course à pied", "muscle_group": "cardio", "type": "cardio", "description": "Cardio classique."},
+    {"name": "Burpees", "muscle_group": "full_body", "type": "cardio", "description": "Exercice cardio intense au poids du corps."}
+]

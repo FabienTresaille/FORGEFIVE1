@@ -1,0 +1,32 @@
+.button {
+  border-radius: var(--border-radius-btn);
+  padding: 1rem;
+  font-weight: bold;
+  font-size: 1rem;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.1s, opacity 0.2s;
+  width: 100%;
+}
+.button:active {
+  transform: scale(0.96);
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.primary {
+  background-color: var(--color-accent);
+  color: #000;
+}
+.secondary {
+  background-color: var(--color-surface-light);
+  color: var(--color-text);
+}
+.danger {
+  background-color: var(--color-error);
+  color: #fff;
+}
