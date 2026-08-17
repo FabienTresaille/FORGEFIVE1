@@ -40,13 +40,13 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=audit-app_web"
-      - "traefik.http.routers.vision-api.rule=Host(`perfs.alsek.fr`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.vision-api.tls=true"
-      - "traefik.http.routers.vision-api.priority=100"
+      - "traefik.http.routers.forgefive-api.rule=Host(`perfs.alsek.fr`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.forgefive-api.tls=true"
+      - "traefik.http.routers.forgefive-api.priority=100"
       - "traefik.http.services.forgefive-backend.loadbalancer.server.port=8000"
-      - "traefik.http.routers.vision-api.service=forgefive-backend"
-      - "traefik.http.middlewares.vision-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.vision-api.middlewares=vision-api-strip"
+      - "traefik.http.routers.forgefive-api.service=forgefive-backend"
+      - "traefik.http.middlewares.forgefive-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.forgefive-api.middlewares=forgefive-api-strip"
 
   frontend:
     build:
@@ -63,11 +63,11 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=audit-app_web"
-      - "traefik.http.routers.vision.rule=Host(`perfs.alsek.fr`)"
-      - "traefik.http.routers.vision.tls=true"
-      - "traefik.http.routers.vision.priority=10"
+      - "traefik.http.routers.forgefive-front.rule=Host(`perfs.alsek.fr`)"
+      - "traefik.http.routers.forgefive-front.tls=true"
+      - "traefik.http.routers.forgefive-front.priority=10"
       - "traefik.http.services.forgefive-frontend.loadbalancer.server.port=3000"
-      - "traefik.http.routers.vision.service=forgefive-frontend"
+      - "traefik.http.routers.forgefive-front.service=forgefive-frontend"
 
 volumes:
   forgefive_pgdata:
