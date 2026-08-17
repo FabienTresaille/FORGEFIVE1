@@ -39,16 +39,14 @@ services:
       - audit-app_web
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=audit-app_web"
       - "traefik.http.routers.vision-api.rule=Host(`perfs.alsek.fr`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.vision-api.entrypoints=websecure"
       - "traefik.http.routers.vision-api.tls=true"
-      - "traefik.http.routers.vision-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.vision-api.service=vision-api"
-      - "traefik.http.services.vision-api.loadbalancer.server.port=8000"
+      - "traefik.http.routers.vision-api.priority=100"
+      - "traefik.http.services.forgefive-backend.loadbalancer.server.port=8000"
+      - "traefik.http.routers.vision-api.service=forgefive-backend"
       - "traefik.http.middlewares.vision-api-strip.stripprefix.prefixes=/api"
       - "traefik.http.routers.vision-api.middlewares=vision-api-strip"
-      - "traefik.http.routers.vision-api.priority=2"
-      - "traefik.docker.network=audit-app_web"
 
   frontend:
     build:
@@ -64,14 +62,12 @@ services:
       - audit-app_web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.vision.rule=Host(`perfs.alsek.fr`)"
-      - "traefik.http.routers.vision.entrypoints=websecure"
-      - "traefik.http.routers.vision.tls=true"
-      - "traefik.http.routers.vision.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.vision.service=vision"
-      - "traefik.http.services.vision.loadbalancer.server.port=3000"
-      - "traefik.http.routers.vision.priority=1"
       - "traefik.docker.network=audit-app_web"
+      - "traefik.http.routers.vision.rule=Host(`perfs.alsek.fr`)"
+      - "traefik.http.routers.vision.tls=true"
+      - "traefik.http.routers.vision.priority=10"
+      - "traefik.http.services.forgefive-frontend.loadbalancer.server.port=3000"
+      - "traefik.http.routers.vision.service=forgefive-frontend"
 
 volumes:
   forgefive_pgdata:
