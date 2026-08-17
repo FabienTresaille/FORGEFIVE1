@@ -1,13 +1,16 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
+import { api, setAuthToken } from '@/lib/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const auth = useAuth();
+  const router = useRouter();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -15,7 +18,31 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
+      if (auth && typeof auth.login === 'function') {
+        await auth.login(email, password);
+      } else {
+        const res = await api.auth.login({ email, password });
+        if (res.access_token) {
+          setAuthToken(res.access_token);
+          if (res.refresh_token) {
+            localStorage.setItem('refresh_token', res.refresh_token);
+          }
+          const userData = res.user || {
+            email,
+            must_change_password: res.must_change_password || false,
+            role: res.role || 'user',
+            display_name: res.display_name || email.split('@')[0]
+          };
+          localStorage.setItem('user', JSON.stringify(userData));
+          if (auth && auth.setUser) auth.setUser(userData);
+
+          if (userData.must_change_password) {
+            router.push('/change-password');
+          } else {
+            router.push('/dashboard');
+          }
+        }
+      }
     } catch (err) {
       console.error('Login error:', err);
       setError(err.message || 'Identifiants incorrects');

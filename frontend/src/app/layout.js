@@ -1,11 +1,10 @@
 import './globals.css';
+import { AuthProvider } from '@/lib/auth';
 
 export const metadata = {
   title: 'ForgeFive — Suivi Musculation',
   description: 'Application de suivi de musculation et performance pour votre groupe.',
   manifest: '/manifest.json',
-  themeColor: '#1B2838',
-  viewport: { width: 'device-width', initialScale: 1, maximumScale: 1, userScalable: false },
   appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'ForgeFive' },
 };
 
@@ -15,6 +14,7 @@ export const viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
+  themeColor: '#1B2838',
 };
 
 export default function RootLayout({ children }) {
@@ -27,7 +27,11 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }
