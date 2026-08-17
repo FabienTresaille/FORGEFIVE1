@@ -36,17 +36,18 @@ services:
       DOMAIN: ${DOMAIN}
     networks:
       - internal
-      - forgefive_web
+      - audit-app_web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.forgefive-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.forgefive-api.entrypoints=websecure"
-      - "traefik.http.routers.forgefive-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.forgefive-api.service=forgefive-api"
-      - "traefik.http.services.forgefive-api.loadbalancer.server.port=8000"
-      - "traefik.http.middlewares.forgefive-api-strip.stripprefix.prefixes=/api"
-      - "traefik.http.routers.forgefive-api.middlewares=forgefive-api-strip"
-      - "traefik.docker.network=forgefive_web"
+      - "traefik.http.routers.vision-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.vision-api.entrypoints=websecure"
+      - "traefik.http.routers.vision-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vision-api.service=vision-api"
+      - "traefik.http.services.vision-api.loadbalancer.server.port=8000"
+      - "traefik.http.middlewares.vision-api-strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.vision-api.middlewares=vision-api-strip"
+      - "traefik.http.routers.vision-api.priority=2"
+      - "traefik.docker.network=audit-app_web"
 
   frontend:
     build:
@@ -59,17 +60,16 @@ services:
     depends_on:
       - backend
     networks:
-      - forgefive_web
+      - audit-app_web
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.forgefive-front.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.forgefive-front.entrypoints=websecure"
-      - "traefik.http.routers.forgefive-front.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.forgefive-front.service=forgefive-front"
-      - "traefik.http.services.forgefive-front.loadbalancer.server.port=3000"
-      - "traefik.http.routers.forgefive-front.priority=1"
-      - "traefik.http.routers.forgefive-api.priority=2"
-      - "traefik.docker.network=forgefive_web"
+      - "traefik.http.routers.vision.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.vision.entrypoints=websecure"
+      - "traefik.http.routers.vision.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.vision.service=vision"
+      - "traefik.http.services.vision.loadbalancer.server.port=3000"
+      - "traefik.http.routers.vision.priority=1"
+      - "traefik.docker.network=audit-app_web"
 
 volumes:
   forgefive_pgdata:
@@ -78,5 +78,5 @@ volumes:
 networks:
   internal:
     driver: bridge
-  forgefive_web:
+  audit-app_web:
     external: true
