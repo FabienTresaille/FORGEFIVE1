@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, Boolean, Enum
+from sqlalchemy import Column, String, Boolean, Enum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 import enum
@@ -27,5 +27,5 @@ class Exercise(Base):
     description = Column(String, nullable=True)
     image_url = Column(String, nullable=True)
     is_custom = Column(Boolean, default=False, nullable=False)
-    created_by_user_id = Column(UUID(as_uuid=True), nullable=True)
+    created_by_user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     type = Column(Enum(ExerciseType), default=ExerciseType.force, nullable=False)
