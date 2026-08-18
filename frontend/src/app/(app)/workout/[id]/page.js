@@ -72,7 +72,7 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(interval);
   }, [isTimerActive]);
 
-  // Load DB exercises for the modal
+  // Load DB exercises for the modal and set mapping
   useEffect(() => {
     async function loadDbExercises() {
       try {
@@ -137,20 +137,64 @@ export default function ActiveWorkoutPage() {
     setFinishing(true);
 
     try {
-      if (sessionId && sessionId.length > 20) {
-        await api.workouts.update(sessionId, {
-          duration_minutes: Math.max(1, Math.round(seconds / 60)),
+      const durationMin = Math.max(1, Math.round(seconds / 60));
+      
+      // Map sets to database exercises
+      const formattedSets = [];
+      exercises.forEach(ex => {
+        const matched = allDbExercises.find(d => 
+          d.name?.toLowerCase().includes(ex.name?.toLowerCase()) || 
+          ex.name?.toLowerCase().includes(d.name?.toLowerCase())
+        ) || allDbExercises[0];
+
+        const exId = matched?.id;
+        if (exId && ex.sets) {
+          ex.sets.forEach(s => {
+            formattedSets.push({
+              exercise_id: exId,
+              set_number: s.setNumber || 1,
+              weight: parseFloat(s.weight) || 0,
+              reps: parseInt(s.reps) || 10,
+              rpe: 8
+            });
+          });
+        }
+      });
+
+      const isUuid = typeof sessionId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId);
+      let session = null;
+
+      if (isUuid) {
+        session = await api.workouts.update(sessionId, {
+          notes: sessionTitle,
+          duration_minutes: durationMin,
           completed_at: new Date().toISOString()
         }).catch(() => null);
+
+        if (formattedSets.length > 0) {
+          await api.workouts.addSets(sessionId, formattedSets).catch(() => null);
+        }
+      } else {
+        session = await api.workouts.create({
+          notes: sessionTitle,
+          duration_minutes: durationMin,
+          date: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          sets: formattedSets
+        }).catch(() => null);
+      }
+
+      // Publish to Activity Feed
+      const finalSessionId = session?.id || (isUuid ? sessionId : null);
+      if (finalSessionId) {
+        await api.feed.publish(finalSessionId).catch(() => null);
       }
     } catch (e) {
-      console.error(e);
+      console.error('Error finishing workout:', e);
     } finally {
-      // Clear plan after finishing
       localStorage.removeItem('active_workout_plan');
+      router.push('/dashboard');
     }
-
-    router.push('/dashboard');
   };
 
   return (

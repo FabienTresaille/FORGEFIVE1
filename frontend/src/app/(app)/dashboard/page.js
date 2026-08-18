@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const [streak, setStreak] = useState(0);
   const [dailyWorkout, setDailyWorkout] = useState(null);
   const [dailyTip, setDailyTip] = useState('');
+  const [recentWorkouts, setRecentWorkouts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [launching, setLaunching] = useState(false);
 
@@ -28,6 +29,11 @@ export default function DashboardPage() {
       try {
         const tipRes = await api.coach.getDailyTip().catch(() => null);
         setDailyTip(tipRes?.tip || '');
+      } catch (e) { /* silent */ }
+
+      try {
+        const workoutsList = await api.workouts.getAll().catch(() => []);
+        setRecentWorkouts(workoutsList || []);
       } catch (e) { /* silent */ }
 
       setLoading(false);
@@ -63,6 +69,22 @@ export default function DashboardPage() {
     } finally {
       setLaunching(false);
     }
+  };
+
+  const formatWorkoutDate = (dateString) => {
+    if (!dateString) return 'Récemment';
+    const d = new Date(dateString);
+    const now = new Date();
+    const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+    if (diffDays === 0) return "Aujourd'hui";
+    if (diffDays === 1) return 'Hier';
+    if (diffDays < 7) return `Il y a ${diffDays} jours`;
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
+  const calculateVolume = (sets) => {
+    if (!sets || sets.length === 0) return 0;
+    return sets.reduce((total, s) => total + ((s.weight || 0) * (s.reps || 0)), 0);
   };
 
   return (
@@ -145,22 +167,34 @@ export default function DashboardPage() {
       {/* Activité Récente */}
       <section>
         <h3 style={{ marginBottom: '16px' }}>Activité Récente</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <strong style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>Haut du Corps</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Hier</span>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>14 séries • 45 min • 12 450 kg</p>
+        {recentWorkouts.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {recentWorkouts.slice(0, 5).map((w, idx) => {
+              const setsCount = w.sets?.length || 0;
+              const totalVolume = calculateVolume(w.sets);
+              const duration = w.duration_minutes || 45;
+              return (
+                <div key={w.id || idx} className="card card-elevated" style={{ padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <strong style={{ fontSize: '1.05rem', fontFamily: 'var(--font-heading)', color: 'var(--color-text)' }}>
+                      {w.notes || 'Entraînement'}
+                    </strong>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--color-accent)', fontWeight: 600 }}>
+                      {formatWorkoutDate(w.date || w.started_at)}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--color-text-muted)', margin: 0 }}>
+                    {setsCount} séries • {duration} min {totalVolume > 0 ? `• ${totalVolume.toLocaleString('fr-FR')} kg soulevés` : ''}
+                  </p>
+                </div>
+              );
+            })}
           </div>
-          <div className="card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <strong style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>Jambes (Force)</strong>
-              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Il y a 3 jours</span>
-            </div>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>16 séries • 55 min • 14 200 kg</p>
+        ) : (
+          <div className="card text-center text-muted" style={{ padding: '24px' }}>
+            Aucune séance terminée pour le moment.
           </div>
-        </div>
+        )}
       </section>
     </div>
   );

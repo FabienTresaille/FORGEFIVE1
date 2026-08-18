@@ -48,7 +48,10 @@ async def list_workouts(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     result = await db.execute(
-        select(WorkoutSession).options(selectinload(WorkoutSession.sets)).filter(WorkoutSession.user_id == current_user.id)
+        select(WorkoutSession)
+        .options(selectinload(WorkoutSession.sets))
+        .filter(WorkoutSession.user_id == current_user.id)
+        .order_by(WorkoutSession.date.desc())
     )
     return result.scalars().all()
 
