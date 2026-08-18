@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from uuid import UUID
 from datetime import datetime
 from typing import Optional, List
@@ -23,7 +23,7 @@ class WorkoutSetResponse(WorkoutSetBase):
     model_config = {"from_attributes": True}
 
 class WorkoutSessionBase(BaseModel):
-    date: datetime
+    date: Optional[datetime] = Field(default_factory=datetime.utcnow)
     duration_minutes: Optional[int] = None
     notes: Optional[str] = None
     rpe_global: Optional[int] = None
@@ -31,6 +31,8 @@ class WorkoutSessionBase(BaseModel):
     completed_at: Optional[datetime] = None
 
 class WorkoutSessionCreate(WorkoutSessionBase):
+    title: Optional[str] = None
+    routine_id: Optional[UUID] = None
     sets: Optional[List[WorkoutSetCreate]] = []
 
 class WorkoutSessionUpdate(BaseModel):

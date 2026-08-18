@@ -7,11 +7,12 @@ export default function WorkoutPage() {
   const router = useRouter();
   const [routines, setRoutines] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     async function loadRoutines() {
       try {
-        const data = await api.routines.getAll();
+        const data = await api.routines.getAll().catch(() => []);
         setRoutines(data || []);
       } catch (err) {
         console.error(err);
@@ -23,24 +24,44 @@ export default function WorkoutPage() {
   }, []);
 
   const startEmptyWorkout = async () => {
+    if (starting) return;
+    setStarting(true);
     try {
-      const workout = await api.workouts.create({ title: 'Séance libre', date: new Date().toISOString() });
+      const workout = await api.workouts.create({
+        notes: 'Séance libre',
+        date: new Date().toISOString()
+      });
       if (workout && workout.id) {
         router.push(`/workout/${workout.id}`);
+      } else {
+        router.push(`/workout/${Date.now()}`);
       }
     } catch (error) {
       console.error(error);
+      router.push(`/workout/${Date.now()}`);
+    } finally {
+      setStarting(false);
     }
   };
 
-  const startRoutine = async (routineId) => {
+  const startRoutine = async (routine) => {
+    if (starting) return;
+    setStarting(true);
     try {
-      const workout = await api.workouts.create({ routine_id: routineId, date: new Date().toISOString() });
+      const workout = await api.workouts.create({
+        notes: routine.name || 'Séance routine',
+        date: new Date().toISOString()
+      });
       if (workout && workout.id) {
         router.push(`/workout/${workout.id}`);
+      } else {
+        router.push(`/workout/${routine.id || Date.now()}`);
       }
     } catch (error) {
       console.error(error);
+      router.push(`/workout/${routine.id || Date.now()}`);
+    } finally {
+      setStarting(false);
     }
   };
 
@@ -50,30 +71,43 @@ export default function WorkoutPage() {
       
       <button 
         className="btn btn-primary w-full text-lg mb-lg" 
-        style={{ padding: '24px' }}
+        style={{ padding: '20px', fontSize: '1.15rem' }}
         onClick={startEmptyWorkout}
+        disabled={starting}
       >
-        + Séance vide
+        {starting ? 'Préparation...' : '+ Séance vide'}
       </button>
 
       <section>
-        <h2 className="mb-md text-muted">Mes Routines</h2>
+        <div className="flex justify-between items-center mb-md">
+          <h2 className="text-muted" style={{ fontSize: '1.2rem', margin: 0 }}>Mes Programmes</h2>
+          <button 
+            className="btn btn-secondary text-sm" 
+            style={{ padding: '6px 12px', minHeight: 'auto' }}
+            onClick={() => router.push('/routines')}
+          >
+            Gérer
+          </button>
+        </div>
+
         {loading ? (
           <div className="flex-col gap-sm">
-            <div className="card skeleton" style={{ height: '100px' }}></div>
-            <div className="card skeleton" style={{ height: '100px' }}></div>
+            <div className="card skeleton" style={{ height: '80px' }}></div>
+            <div className="card skeleton" style={{ height: '80px' }}></div>
           </div>
         ) : routines.length > 0 ? (
-          <div className="grid-2">
+          <div className="flex-col gap-md">
             {routines.map(routine => (
-              <div key={routine.id} className="card flex-col justify-between">
+              <div key={routine.id} className="card flex justify-between items-center" style={{ padding: '16px 20px' }}>
                 <div>
-                  <h3 className="font-heading mb-xs">{routine.name}</h3>
+                  <h3 className="font-heading mb-xs" style={{ fontSize: '1.1rem' }}>{routine.name}</h3>
                   <p className="text-sm text-muted">{routine.exercises?.length || 0} exercices</p>
                 </div>
                 <button 
-                  className="btn btn-secondary mt-sm" 
-                  onClick={() => startRoutine(routine.id)}
+                  className="btn btn-primary" 
+                  style={{ minHeight: '40px', padding: '8px 16px', fontSize: '0.9rem' }}
+                  onClick={() => startRoutine(routine)}
+                  disabled={starting}
                 >
                   Démarrer
                 </button>
@@ -81,8 +115,11 @@ export default function WorkoutPage() {
             ))}
           </div>
         ) : (
-          <div className="card text-center">
-            <p className="text-muted">Aucune routine enregistrée.</p>
+          <div className="card text-center" style={{ padding: '32px 16px' }}>
+            <p className="text-muted mb-md">Aucune routine personnalisée pour le moment.</p>
+            <button className="btn btn-secondary" onClick={() => router.push('/routines')}>
+              + Créer une routine
+            </button>
           </div>
         )}
       </section>

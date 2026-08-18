@@ -4,11 +4,11 @@ from datetime import datetime, date
 from typing import Optional
 
 class RecoveryEntryBase(BaseModel):
-    date: date
-    sleep_hours: int = Field(ge=0, le=24)
-    sleep_quality: int = Field(ge=1, le=5)
-    soreness_level: int = Field(ge=1, le=5)
-    energy_level: int = Field(ge=1, le=5)
+    date: Optional[date] = None
+    sleep_hours: Optional[int] = Field(default=8, ge=0, le=24)
+    sleep_quality: int = Field(default=3, ge=1, le=5)
+    soreness_level: int = Field(default=3, ge=1, le=5)
+    energy_level: int = Field(default=3, ge=1, le=5)
     free_note: Optional[str] = None
 
 class RecoveryEntryCreate(RecoveryEntryBase):

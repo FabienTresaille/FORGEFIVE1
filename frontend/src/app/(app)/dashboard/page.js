@@ -1,14 +1,17 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { api } from '@/lib/api';
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const [streak, setStreak] = useState(0);
   const [dailyWorkout, setDailyWorkout] = useState(null);
   const [dailyTip, setDailyTip] = useState('');
   const [loading, setLoading] = useState(true);
+  const [launching, setLaunching] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -32,6 +35,28 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
+  const handleLaunchWorkout = async () => {
+    if (launching) return;
+    setLaunching(true);
+    try {
+      const workoutTitle = dailyWorkout?.title || 'Séance du Jour IA';
+      const workout = await api.workouts.create({
+        notes: workoutTitle,
+        date: new Date().toISOString()
+      });
+      if (workout && workout.id) {
+        router.push(`/workout/${workout.id}`);
+      } else {
+        router.push('/workout');
+      }
+    } catch (err) {
+      console.error('Error starting workout:', err);
+      router.push('/workout');
+    } finally {
+      setLaunching(false);
+    }
+  };
+
   return (
     <div className="container page fade-in">
       <header className="flex justify-between items-center" style={{ marginBottom: '24px' }}>
@@ -54,6 +79,7 @@ export default function DashboardPage() {
           <div className="card skeleton" style={{ height: '200px' }}></div>
         ) : dailyWorkout && dailyWorkout.exercises ? (
           <div className="card" style={{ background: 'rgba(31, 48, 68, 0.85)' }}>
+            <h4 style={{ color: 'var(--color-accent)', marginBottom: '8px' }}>{dailyWorkout.title || 'Séance personnalisée'}</h4>
             <p style={{ fontSize: '0.875rem', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
               {dailyWorkout.recovery_note || 'Basé sur votre récupération, voici une séance adaptée.'}
             </p>
@@ -75,8 +101,13 @@ export default function DashboardPage() {
               ))}
             </div>
 
-            <button className="btn btn-primary btn-full" style={{ fontSize: '1.1rem' }}>
-              Lancer cette séance
+            <button 
+              className="btn btn-primary btn-full" 
+              style={{ fontSize: '1.1rem' }}
+              onClick={handleLaunchWorkout}
+              disabled={launching}
+            >
+              {launching ? 'Démarrage...' : 'Lancer cette séance'}
             </button>
           </div>
         ) : (
@@ -84,7 +115,7 @@ export default function DashboardPage() {
             <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>
               Renseignez votre profil pour recevoir des séances personnalisées.
             </p>
-            <button className="btn btn-primary" onClick={() => window.location.href = '/onboarding'}>
+            <button className="btn btn-primary" onClick={() => router.push('/onboarding')}>
               Compléter mon profil
             </button>
           </div>

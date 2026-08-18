@@ -19,9 +19,15 @@ async def create_workout(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> Any:
+    notes_val = data.notes or data.title
     new_sess = WorkoutSession(
         user_id=current_user.id,
-        **data.model_dump(exclude={"sets"})
+        date=data.date or datetime.utcnow(),
+        duration_minutes=data.duration_minutes,
+        notes=notes_val,
+        rpe_global=data.rpe_global,
+        started_at=data.started_at or datetime.utcnow(),
+        completed_at=data.completed_at
     )
     db.add(new_sess)
     await db.flush()
