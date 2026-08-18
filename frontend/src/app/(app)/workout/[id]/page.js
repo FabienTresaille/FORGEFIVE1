@@ -139,19 +139,20 @@ export default function ActiveWorkoutPage() {
     try {
       const durationMin = Math.max(1, Math.round(seconds / 60));
       
-      // Map sets to database exercises
+      // Map sets with exercise name and optional exercise_id
       const formattedSets = [];
       exercises.forEach(ex => {
         const matched = allDbExercises.find(d => 
           d.name?.toLowerCase().includes(ex.name?.toLowerCase()) || 
           ex.name?.toLowerCase().includes(d.name?.toLowerCase())
-        ) || allDbExercises[0];
+        );
 
         const exId = matched?.id;
-        if (exId && ex.sets) {
+        if (ex.sets) {
           ex.sets.forEach(s => {
             formattedSets.push({
-              exercise_id: exId,
+              exercise_id: exId || undefined,
+              exercise_name: ex.name,
               set_number: s.setNumber || 1,
               weight: parseFloat(s.weight) || 0,
               reps: parseInt(s.reps) || 10,

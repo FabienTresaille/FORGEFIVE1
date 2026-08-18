@@ -2,16 +2,60 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload
-from typing import List, Any
+from sqlalchemy import func
+from typing import List, Any, Optional
+from datetime import datetime
 import uuid
 
 from app.database import get_db
 from app.api.deps import get_current_user
 from app.models.user import User
 from app.models.workout import WorkoutSession, WorkoutSet
+from app.models.exercise import Exercise, MuscleGroup
 from app.schemas.workout import WorkoutSessionResponse, WorkoutSessionCreate, WorkoutSessionUpdate, WorkoutSetCreate, WorkoutSetResponse
 
 router = APIRouter()
+
+async def _resolve_exercise_id(db: AsyncSession, exercise_id: Optional[uuid.UUID], exercise_name: Optional[str], user_id: uuid.UUID) -> uuid.UUID:
+    if exercise_id:
+        res = await db.execute(select(Exercise).filter(Exercise.id == exercise_id))
+        ex = res.scalars().first()
+        if ex:
+            return ex.id
+
+    if exercise_name and exercise_name.strip():
+        clean_name = exercise_name.strip()
+        res = await db.execute(select(Exercise).filter(func.lower(Exercise.name) == clean_name.lower()))
+        ex = res.scalars().first()
+        if ex:
+            return ex.id
+
+        # Auto-create custom exercise if not found
+        new_ex = Exercise(
+            name=clean_name,
+            muscle_group=MuscleGroup.full_body,
+            is_custom=True,
+            created_by_user_id=user_id
+        )
+        db.add(new_ex)
+        await db.flush()
+        return new_ex.id
+
+    # Fallback to any first exercise in DB
+    res = await db.execute(select(Exercise).limit(1))
+    ex = res.scalars().first()
+    if ex:
+        return ex.id
+
+    # If DB has no exercises, create a default base exercise
+    default_ex = Exercise(
+        name="Exercice général",
+        muscle_group=MuscleGroup.full_body,
+        is_custom=False
+    )
+    db.add(default_ex)
+    await db.flush()
+    return default_ex.id
 
 @router.post("", response_model=WorkoutSessionResponse)
 async def create_workout(
@@ -34,7 +78,10 @@ async def create_workout(
     
     if data.sets:
         for s in data.sets:
-            db.add(WorkoutSet(session_id=new_sess.id, **s.model_dump()))
+            ex_id = await _resolve_exercise_id(db, s.exercise_id, s.exercise_name, current_user.id)
+            set_dict = s.model_dump(exclude={"exercise_name"})
+            set_dict["exercise_id"] = ex_id
+            db.add(WorkoutSet(session_id=new_sess.id, **set_dict))
             
     await db.commit()
     result = await db.execute(
@@ -102,7 +149,10 @@ async def add_workout_sets(
         
     new_sets = []
     for s in sets:
-        new_set = WorkoutSet(session_id=session_id, **s.model_dump())
+        ex_id = await _resolve_exercise_id(db, s.exercise_id, s.exercise_name, current_user.id)
+        set_dict = s.model_dump(exclude={"exercise_name"})
+        set_dict["exercise_id"] = ex_id
+        new_set = WorkoutSet(session_id=session_id, **set_dict)
         db.add(new_set)
         new_sets.append(new_set)
         

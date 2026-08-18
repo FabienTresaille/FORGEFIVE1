@@ -4,8 +4,9 @@ from datetime import datetime
 from typing import Optional, List
 
 class WorkoutSetBase(BaseModel):
-    exercise_id: UUID
-    set_number: int
+    exercise_id: Optional[UUID] = None
+    exercise_name: Optional[str] = None
+    set_number: int = 1
     weight: Optional[float] = None
     reps: Optional[int] = None
     rpe: Optional[int] = None
@@ -16,9 +17,17 @@ class WorkoutSetBase(BaseModel):
 class WorkoutSetCreate(WorkoutSetBase):
     pass
 
-class WorkoutSetResponse(WorkoutSetBase):
+class WorkoutSetResponse(BaseModel):
     id: UUID
     session_id: UUID
+    exercise_id: UUID
+    set_number: int
+    weight: Optional[float] = None
+    reps: Optional[int] = None
+    rpe: Optional[int] = None
+    duration_seconds: Optional[int] = None
+    distance_km: Optional[float] = None
+    pace: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -36,8 +45,8 @@ class WorkoutSessionCreate(WorkoutSessionBase):
     sets: Optional[List[WorkoutSetCreate]] = []
 
 class WorkoutSessionUpdate(BaseModel):
-    duration_minutes: Optional[int] = None
     notes: Optional[str] = None
+    duration_minutes: Optional[int] = None
     rpe_global: Optional[int] = None
     completed_at: Optional[datetime] = None
 
