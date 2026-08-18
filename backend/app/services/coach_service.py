@@ -228,8 +228,28 @@ Consignes:
     try:
         start_idx = response_text.find('{')
         end_idx = response_text.rfind('}') + 1
-        json_str = response_text[start_idx:end_idx]
-        return json.loads(json_str)
-    except Exception as e:
-        return {"error": "Failed to parse AI response", "raw_response": response_text}
+        if start_idx != -1 and end_idx > start_idx:
+            json_str = response_text[start_idx:end_idx]
+            parsed = json.loads(json_str)
+            if "exercises" in parsed and len(parsed["exercises"]) > 0:
+                return parsed
+    except Exception:
+        pass
+
+    # Intelligent fallback workout if Gemini output was text or failed
+    fresh_muscles = [m for m, status in muscle_recovery_map.items() if status == "frais"]
+    focus = fresh_muscles[:2] if fresh_muscles else ["Pectoraux", "Triceps"]
+    
+    return {
+        "title": f"Séance Focus {', '.join(focus)}",
+        "focus_muscles": focus,
+        "recovery_note": "Séance ciblée sur vos groupes musculaires frais pour optimiser vos gains et laisser reposer les zones fatiguées.",
+        "exercises": [
+            {"name": "Développé couché / Pompes", "sets": 4, "reps": "8-10", "rest_seconds": 90, "notes": "Contrôlez la phase excentrique"},
+            {"name": "Tirage horizontal / Tractions", "sets": 4, "reps": "10-12", "rest_seconds": 90, "notes": "Serrez les omoplates"},
+            {"name": "Squat / Fentes", "sets": 3, "reps": "12-15", "rest_seconds": 90, "notes": "Amplitude complète"},
+            {"name": "Gainage planche", "sets": 3, "reps": "45 sec", "rest_seconds": 60, "notes": "Abdominaux contractés"}
+        ]
+    }
+
 

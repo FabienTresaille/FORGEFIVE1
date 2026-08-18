@@ -84,7 +84,7 @@ export default function DashboardPage() {
             <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>
               Renseignez votre profil pour recevoir des séances personnalisées.
             </p>
-            <button className="btn btn-primary" onClick={() => window.location.href = '/profile'}>
+            <button className="btn btn-primary" onClick={() => window.location.href = '/onboarding'}>
               Compléter mon profil
             </button>
           </div>
