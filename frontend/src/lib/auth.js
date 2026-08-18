@@ -32,9 +32,9 @@ export function AuthProvider({ children }) {
         router.push('/login');
       } else if (user && user.must_change_password && pathname !== '/change-password') {
         router.push('/change-password');
-      } else if (user && user.onboarding_completed === false && pathname !== '/onboarding') {
-        router.push('/onboarding');
       }
+      // Note: onboarding redirect is handled manually after login, not on every page load
+      // to avoid redirect loops with existing users who don't have the field yet
     }
   }, [user, loading, pathname, router]);
 
@@ -46,10 +46,10 @@ export function AuthProvider({ children }) {
         localStorage.setItem('refresh_token', res.refresh_token);
       }
       
-      // Decode or build minimal user object if not returned directly
       const userData = res.user || {
         email,
         must_change_password: res.must_change_password || false,
+        onboarding_completed: res.onboarding_completed !== undefined ? res.onboarding_completed : true,
         role: res.role || 'user',
         display_name: res.display_name || email.split('@')[0]
       };
