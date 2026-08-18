@@ -27,11 +27,13 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (!loading) {
-      const isAuthPage = pathname === '/login' || pathname === '/change-password';
+      const isAuthPage = pathname === '/login' || pathname === '/change-password' || pathname === '/onboarding';
       if (!user && !isAuthPage) {
         router.push('/login');
       } else if (user && user.must_change_password && pathname !== '/change-password') {
         router.push('/change-password');
+      } else if (user && user.onboarding_completed === false && pathname !== '/onboarding') {
+        router.push('/onboarding');
       }
     }
   }, [user, loading, pathname, router]);
@@ -57,6 +59,8 @@ export function AuthProvider({ children }) {
 
       if (userData.must_change_password) {
         router.push('/change-password');
+      } else if (userData.onboarding_completed === false) {
+        router.push('/onboarding');
       } else {
         router.push('/dashboard');
       }

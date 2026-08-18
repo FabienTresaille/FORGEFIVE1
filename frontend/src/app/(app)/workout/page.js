@@ -1,43 +1,91 @@
 'use client';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 import { useRouter } from 'next/navigation';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
 
-export default function WorkoutStartPage() {
+export default function WorkoutPage() {
   const router = useRouter();
-  
-  const startEmpty = () => {
-    router.push('/workout/new');
+  const [routines, setRoutines] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadRoutines() {
+      try {
+        const data = await api.routines.getAll();
+        setRoutines(data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadRoutines();
+  }, []);
+
+  const startEmptyWorkout = async () => {
+    try {
+      const workout = await api.workouts.create({ title: 'Séance libre', date: new Date().toISOString() });
+      if (workout && workout.id) {
+        router.push(`/workout/${workout.id}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
 
-  const routines = [
-    { id: 1, name: 'Push Day', target: 'Chest, Shoulders, Triceps', lastPerformed: 'Yesterday' },
-    { id: 2, name: 'Pull Day', target: 'Back, Biceps', lastPerformed: '3 days ago' },
-    { id: 3, name: 'Leg Day', target: 'Quads, Hamstrings, Calves', lastPerformed: '5 days ago' },
-  ];
+  const startRoutine = async (routineId) => {
+    try {
+      const workout = await api.workouts.create({ routine_id: routineId, date: new Date().toISOString() });
+      if (workout && workout.id) {
+        router.push(`/workout/${workout.id}`);
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '1.5rem' }}>Start Workout</h2>
-      <Button variant="primary" onClick={startEmpty} style={{ marginBottom: '2rem' }}>
-        Start Empty Workout
-      </Button>
+    <div className="container page fade-in">
+      <h1 className="mb-lg">Démarrer une Séance</h1>
+      
+      <button 
+        className="btn btn-primary w-full text-lg mb-lg" 
+        style={{ padding: '24px' }}
+        onClick={startEmptyWorkout}
+      >
+        + Séance vide
+      </button>
 
-      <h3 style={{ marginBottom: '1rem' }}>My Routines</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {routines.map(routine => (
-          <Card key={routine.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '1.1rem' }}>{routine.name}</h4>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem', margin: '0.25rem 0' }}>{routine.target}</p>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', margin: 0 }}>Last: {routine.lastPerformed}</p>
-            </div>
-            <Button variant="secondary" onClick={() => router.push(`/workout/${routine.id}`)} style={{ width: 'auto', padding: '0.5rem 1rem' }}>
-              Start
-            </Button>
-          </Card>
-        ))}
-      </div>
+      <section>
+        <h2 className="mb-md text-muted">Mes Routines</h2>
+        {loading ? (
+          <div className="flex-col gap-sm">
+            <div className="card skeleton" style={{ height: '100px' }}></div>
+            <div className="card skeleton" style={{ height: '100px' }}></div>
+          </div>
+        ) : routines.length > 0 ? (
+          <div className="grid-2">
+            {routines.map(routine => (
+              <div key={routine.id} className="card flex-col justify-between">
+                <div>
+                  <h3 className="font-heading mb-xs">{routine.name}</h3>
+                  <p className="text-sm text-muted">{routine.exercises?.length || 0} exercices</p>
+                </div>
+                <button 
+                  className="btn btn-secondary mt-sm" 
+                  onClick={() => startRoutine(routine.id)}
+                >
+                  Démarrer
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="card text-center">
+            <p className="text-muted">Aucune routine enregistrée.</p>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

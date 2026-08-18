@@ -14,10 +14,10 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   const tabs = [
-    { name: 'Dashboard', path: '/dashboard', icon: icons.dashboard },
-    { name: 'Workout', path: '/workout', icon: icons.workout },
-    { name: 'Feed', path: '/feed', icon: icons.feed },
-    { name: 'Recovery', path: '/recovery', icon: icons.recovery },
+    { name: 'Accueil', path: '/dashboard', icon: icons.dashboard },
+    { name: 'Séance', path: '/workout', icon: icons.workout },
+    { name: 'Activité', path: '/feed', icon: icons.feed },
+    { name: 'Récup', path: '/recovery', icon: icons.recovery },
     { name: 'Coach', path: '/coach', icon: icons.coach },
   ];
 

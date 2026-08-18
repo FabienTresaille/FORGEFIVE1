@@ -1,51 +1,83 @@
 'use client';
 import { useState } from 'react';
-import ProgressChart from '@/components/charts/ProgressChart';
-import BodyGraph from '@/components/charts/BodyGraph';
-import Card from '@/components/ui/Card';
-import Tabs from '@/components/ui/Tabs';
 
 export default function ProgressPage() {
-  const [activeTab, setActiveTab] = useState('overview');
+  const [tab, setTab] = useState('Vue d\'ensemble');
 
-  const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'exercises', label: 'Exercises' }
+  const volumeData = [
+    { day: 'Lun', volume: 12000 },
+    { day: 'Mar', volume: 14500 },
+    { day: 'Mer', volume: 0 },
+    { day: 'Jeu', volume: 15200 },
+    { day: 'Ven', volume: 0 },
+    { day: 'Sam', volume: 18000 },
+    { day: 'Dim', volume: 0 },
   ];
-
-  const mockData = [
-    { date: 'Mon', volume: 12000 },
-    { date: 'Tue', volume: 15000 },
-    { date: 'Wed', volume: 13500 },
-    { date: 'Thu', volume: 18000 },
-    { date: 'Fri', volume: 14000 },
-    { date: 'Sat', volume: 19500 },
-    { date: 'Sun', volume: 22000 },
-  ];
+  const maxVolume = Math.max(...volumeData.map(d => d.volume), 1);
 
   return (
-    <div>
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+    <div className="container page fade-in">
+      <h1 className="mb-md">Progression</h1>
       
-      {activeTab === 'overview' ? (
+      <div className="flex gap-sm mb-lg">
+        <button 
+          className={`btn flex-1 ${tab === 'Vue d\'ensemble' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setTab('Vue d\'ensemble')}
+        >
+          Vue d'ensemble
+        </button>
+        <button 
+          className={`btn flex-1 ${tab === 'Exercices' ? 'btn-primary' : 'btn-secondary'}`}
+          onClick={() => setTab('Exercices')}
+        >
+          Exercices
+        </button>
+      </div>
+
+      {tab === 'Vue d\'ensemble' && (
         <div className="animate-slide-up">
-          <Card style={{ marginBottom: '1.5rem' }}>
-            <h3 style={{ marginBottom: '1rem' }}>Total Volume (7 Days)</h3>
-            <ProgressChart data={mockData} dataKey="volume" />
-          </Card>
-          
-          <Card>
-            <h3 style={{ marginBottom: '1rem', textAlign: 'center' }}>Muscle Heatmap</h3>
-            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--color-text-muted)' }}>Based on last 30 days of volume</p>
-            <BodyGraph heatMap={{ chest: 85, arms: 45, legs: 10, abs: 0 }} />
-          </Card>
+          <div className="card mb-lg card-elevated">
+            <h2 className="text-lg mb-md">Volume Total (7 jours)</h2>
+            <div className="flex items-end justify-between gap-sm" style={{ height: '200px', paddingTop: '20px' }}>
+              {volumeData.map((d, i) => {
+                const height = (d.volume / maxVolume) * 100;
+                return (
+                  <div key={i} className="flex-col items-center" style={{ flex: 1, gap: '8px' }}>
+                    <div style={{
+                      width: '100%',
+                      height: `${height}%`,
+                      backgroundColor: 'var(--color-accent)',
+                      borderRadius: '4px',
+                      minHeight: d.volume > 0 ? '4px' : '0'
+                    }}></div>
+                    <span className="text-xs text-muted">{d.day}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between mt-md text-sm">
+              <span className="text-muted">Total hebdo</span>
+              <span className="font-mono text-accent">59 700 kg</span>
+            </div>
+          </div>
+
+          <div className="card">
+            <h2 className="text-lg mb-md">Carte Musculaire</h2>
+            <div className="text-center text-muted" style={{ padding: '40px 0' }}>
+              <p>Répartition du volume par groupe musculaire</p>
+              <div className="flex justify-center gap-sm mt-md" style={{ flexWrap: 'wrap' }}>
+                <span className="badge-recovery-rest">Pectoraux 35%</span>
+                <span className="badge-recovery-active">Dos 25%</span>
+                <span className="badge-recovery-fresh">Jambes 40%</span>
+              </div>
+            </div>
+          </div>
         </div>
-      ) : (
-        <div className="animate-slide-up">
-          <Card>
-            <h3 style={{ marginBottom: '1rem' }}>Bench Press (1RM)</h3>
-            <ProgressChart data={mockData.map(d => ({ date: d.date, weight: d.volume / 150 }))} dataKey="weight" />
-          </Card>
+      )}
+
+      {tab === 'Exercices' && (
+        <div className="animate-slide-up card text-center text-muted">
+          Sélectionnez un exercice pour voir son évolution.
         </div>
       )}
     </div>

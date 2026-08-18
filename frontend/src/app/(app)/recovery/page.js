@@ -1,52 +1,151 @@
 'use client';
-import { useState } from 'react';
-import Slider from '@/components/ui/Slider';
-import Button from '@/components/ui/Button';
-import Card from '@/components/ui/Card';
-import RecoveryChart from '@/components/charts/RecoveryChart';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 export default function RecoveryPage() {
-  const [sleep, setSleep] = useState(3);
-  const [soreness, setSoreness] = useState(3);
-  const [energy, setEnergy] = useState(3);
+  const [todayEntry, setTodayEntry] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
-  const mockData = [
-    { day: 'Mon', score: 8 },
-    { day: 'Tue', score: 6 },
-    { day: 'Wed', score: 9 },
-    { day: 'Thu', score: 7 },
-    { day: 'Fri', score: 5 },
-    { day: 'Sat', score: 8 },
-    { day: 'Sun', score: 10 },
-  ];
+  const [formData, setFormData] = useState({
+    sleep_quality: 3,
+    soreness: 3,
+    energy_level: 3
+  });
 
-  const handleSave = () => {
-    alert('Recovery logged!');
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [today, hist] = await Promise.all([
+          api.recovery.getToday(),
+          api.recovery.getHistory(7)
+        ]);
+        if (today) {
+          setTodayEntry(today);
+          setFormData({
+            sleep_quality: today.sleep_quality || 3,
+            soreness: today.soreness || 3,
+            energy_level: today.energy_level || 3
+          });
+        }
+        setHistory(hist || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    try {
+      const entry = await api.recovery.create(formData);
+      setTodayEntry(entry);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '1.5rem' }}>Daily Recovery</h2>
-      
-      <Card style={{ marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1.5rem' }}>Log Today</h3>
-        <Slider label="Sleep Quality" value={sleep} onChange={e => setSleep(Number(e.target.value))} />
-        <Slider label="Muscle Soreness (1 = very sore)" value={soreness} onChange={e => setSoreness(Number(e.target.value))} />
-        <Slider label="Energy Level" value={energy} onChange={e => setEnergy(Number(e.target.value))} />
-        <Button variant="primary" onClick={handleSave} style={{ marginTop: '1rem' }}>Log Recovery</Button>
-      </Card>
+    <div className="container page fade-in">
+      <h1 className="mb-lg">Récupération du Jour</h1>
 
-      <Card style={{ borderLeft: '4px solid var(--color-accent)', marginBottom: '2rem' }}>
-        <h4 style={{ color: 'var(--color-accent)', margin: '0 0 0.5rem 0' }}>AI Recommendation</h4>
-        <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-muted)' }}>
-          Your energy is average but soreness is low. Good day for a moderate hypertrophy session!
-        </p>
-      </Card>
+      <div className="card mb-lg card-elevated">
+        <h2 className="mb-md text-lg">Journal du jour</h2>
+        <div className="flex-col gap-md">
+          
+          <div>
+            <div className="flex justify-between mb-sm">
+              <label className="text-sm">Qualité du sommeil</label>
+              <span className="text-accent font-mono">{formData.sleep_quality}/5</span>
+            </div>
+            <input 
+              type="range" min="1" max="5" 
+              value={formData.sleep_quality}
+              onChange={(e) => handleChange('sleep_quality', parseInt(e.target.value))}
+            />
+          </div>
 
-      <Card>
-        <h3 style={{ marginBottom: '1rem' }}>Recovery History</h3>
-        <RecoveryChart data={mockData} />
-      </Card>
+          <div>
+            <div className="flex justify-between mb-sm">
+              <label className="text-sm">Courbatures (5 = Aucune)</label>
+              <span className="text-accent font-mono">{formData.soreness}/5</span>
+            </div>
+            <input 
+              type="range" min="1" max="5" 
+              value={formData.soreness}
+              onChange={(e) => handleChange('soreness', parseInt(e.target.value))}
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between mb-sm">
+              <label className="text-sm">Niveau d'énergie</label>
+              <span className="text-accent font-mono">{formData.energy_level}/5</span>
+            </div>
+            <input 
+              type="range" min="1" max="5" 
+              value={formData.energy_level}
+              onChange={(e) => handleChange('energy_level', parseInt(e.target.value))}
+            />
+          </div>
+
+          <button 
+            className="btn btn-primary w-full mt-md" 
+            onClick={handleSubmit}
+            disabled={saving}
+          >
+            {saving ? 'Enregistrement...' : 'Enregistrer'}
+          </button>
+        </div>
+      </div>
+
+      {todayEntry && (
+        <div className="card mb-lg" style={{ borderLeft: '4px solid var(--color-accent)' }}>
+          <h3 className="mb-sm flex items-center gap-sm text-accent">
+            🤖 Recommandation IA
+          </h3>
+          <p className="text-sm text-muted">
+            {todayEntry.recommendation || "Votre récupération est optimale. Vous êtes prêt pour une séance intense aujourd'hui !"}
+          </p>
+        </div>
+      )}
+
+      <section>
+        <h3 className="mb-md">Historique (7 derniers jours)</h3>
+        {loading ? (
+          <div className="skeleton" style={{ height: '150px', borderRadius: 'var(--radius-md)' }}></div>
+        ) : history.length > 0 ? (
+          <div className="flex gap-sm" style={{ height: '150px', alignItems: 'flex-end', paddingTop: '20px', paddingBottom: '20px' }}>
+            {history.map((day, i) => {
+              const score = ((day.sleep_quality + day.soreness + day.energy_level) / 15) * 100;
+              return (
+                <div key={i} className="flex-col items-center" style={{ flex: 1, gap: '8px' }}>
+                  <div style={{ 
+                    width: '100%', 
+                    height: `${score}%`, 
+                    backgroundColor: score > 70 ? 'var(--color-success)' : score > 40 ? 'var(--color-warning)' : 'var(--color-error)',
+                    borderRadius: '4px',
+                    minHeight: '10px'
+                  }}></div>
+                  <span className="text-xs text-muted">{new Date(day.date).toLocaleDateString('fr-FR', { weekday: 'short' })}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center text-muted">Aucun historique disponible.</div>
+        )}
+      </section>
     </div>
   );
 }

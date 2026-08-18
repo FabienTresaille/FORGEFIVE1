@@ -1,67 +1,86 @@
 'use client';
-import { useState } from 'react';
-import Card from '@/components/ui/Card';
-import Input from '@/components/ui/Input';
-import Tabs from '@/components/ui/Tabs';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 export default function ExercisesPage() {
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [filter, setFilter] = useState('Tous');
+  const [exercises, setExercises] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const tabs = [
-    { id: 'all', label: 'All' },
-    { id: 'chest', label: 'Chest' },
-    { id: 'back', label: 'Back' },
-    { id: 'legs', label: 'Legs' },
-    { id: 'shoulders', label: 'Shoulders' },
-    { id: 'arms', label: 'Arms' },
-  ];
+  const tabs = ['Tous', 'Pectoraux', 'Dos', 'Jambes', 'Épaules', 'Bras'];
 
-  const exercises = [
-    { id: 1, name: 'Bench Press', muscle: 'Chest', type: 'Barbell' },
-    { id: 2, name: 'Squat', muscle: 'Legs', type: 'Barbell' },
-    { id: 3, name: 'Pull-up', muscle: 'Back', type: 'Bodyweight' },
-    { id: 4, name: 'Overhead Press', muscle: 'Shoulders', type: 'Barbell' },
-    { id: 5, name: 'Bicep Curl', muscle: 'Arms', type: 'Dumbbell' },
-    { id: 6, name: 'Leg Extension', muscle: 'Legs', type: 'Machine' },
-  ];
+  useEffect(() => {
+    async function loadExercises() {
+      try {
+        const data = await api.exercises.getAll();
+        setExercises(data || []);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadExercises();
+  }, []);
 
-  const filtered = exercises.filter(ex => 
-    ex.name.toLowerCase().includes(search.toLowerCase()) && 
-    (activeTab === 'all' || ex.muscle.toLowerCase() === activeTab)
-  );
+  const filtered = exercises.filter(ex => {
+    const matchesSearch = ex.name?.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'Tous' || ex.muscle_group === filter;
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '1rem' }}>Exercise Library</h2>
+    <div className="container page fade-in">
+      <h1 className="mb-md">Bibliothèque d'Exercices</h1>
       
-      <Input 
-        placeholder="Search exercises..." 
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      
-      <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-      
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-        {filtered.map(ex => (
-          <Card key={ex.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
-            <div>
-              <h4 style={{ margin: 0 }}>{ex.name}</h4>
-              <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{ex.type}</span>
-            </div>
-            <span style={{ 
-              backgroundColor: 'var(--color-surface-light)', 
-              padding: '0.25rem 0.5rem', 
-              borderRadius: 'var(--border-radius-pill)',
-              fontSize: '0.75rem',
-              color: 'var(--color-accent)'
-            }}>
-              {ex.muscle}
-            </span>
-          </Card>
+      <div className="mb-md">
+        <input 
+          type="text" 
+          placeholder="Rechercher un exercice..." 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <div className="flex gap-sm mb-lg" style={{ overflowX: 'auto', paddingBottom: '8px' }}>
+        {tabs.map(tab => (
+          <button
+            key={tab}
+            className={`btn ${filter === tab ? 'btn-primary' : 'btn-secondary'}`}
+            style={{ whiteSpace: 'nowrap', padding: '8px 16px', minHeight: '36px' }}
+            onClick={() => setFilter(tab)}
+          >
+            {tab}
+          </button>
         ))}
       </div>
+
+      {loading ? (
+        <div className="flex-col gap-sm">
+          <div className="card skeleton" style={{ height: '80px' }}></div>
+          <div className="card skeleton" style={{ height: '80px' }}></div>
+          <div className="card skeleton" style={{ height: '80px' }}></div>
+        </div>
+      ) : (
+        <div className="flex-col gap-sm">
+          {filtered.length > 0 ? filtered.map(ex => (
+            <div key={ex.id} className="card flex justify-between items-center" style={{ padding: '16px' }}>
+              <div>
+                <h3 className="font-heading text-lg">{ex.name}</h3>
+                <span className="text-xs text-muted">{ex.type || 'Poids libre'}</span>
+              </div>
+              <span className="badge-recovery-fresh" style={{ backgroundColor: 'var(--color-surface-hover)', color: 'var(--color-text)' }}>
+                {ex.muscle_group}
+              </span>
+            </div>
+          )) : (
+            <div className="card text-center text-muted">
+              Aucun exercice trouvé.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

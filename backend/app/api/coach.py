@@ -61,3 +61,10 @@ async def get_daily_tip(
     current_user: User = Depends(get_current_user)
 ) -> Any:
     return await coach_service.get_daily_tip(db, current_user)
+
+@router.get("/daily-workout")
+async def get_daily_workout(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+) -> Any:
+    return await coach_service.generate_daily_workout(db, current_user)

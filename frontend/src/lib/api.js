@@ -67,6 +67,9 @@ export const api = {
     },
     changePassword: (data) => fetchApi('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
     refresh: (refreshToken) => fetchApi('/auth/refresh', { method: 'POST', body: JSON.stringify({ refresh_token: refreshToken }) }),
+    me: () => fetchApi('/auth/me'),
+    onboarding: (data) => fetchApi('/auth/onboarding', { method: 'POST', body: JSON.stringify(data) }),
+    updateProfile: (data) => fetchApi('/auth/profile', { method: 'PATCH', body: JSON.stringify(data) }),
   },
   admin: {
     getUsers: () => fetchApi('/admin/users'),
@@ -115,6 +118,7 @@ export const api = {
     getConversation: (id) => fetchApi(`/coach/conversations/${id}`),
     analyzeWorkout: (sessionId) => fetchApi(`/coach/analyze-workout/${sessionId}`, { method: 'POST' }),
     getDailyTip: () => fetchApi('/coach/daily-tip'),
+    getDailyWorkout: () => fetchApi('/coach/daily-workout'),
   },
   gamification: {
     getStreak: () => fetchApi('/gamification/streak'),

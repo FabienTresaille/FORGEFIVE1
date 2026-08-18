@@ -29,6 +29,7 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-full: 9999px;
+  --border-radius-pill: 9999px;
   --shadow-sm: 0 2px 8px rgba(0,0,0,0.2);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.3);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
@@ -48,6 +49,7 @@ html { font-size: 16px; -webkit-text-size-adjust: 100%; }
 body {
   font-family: var(--font-body);
   background-color: var(--color-bg);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
   color: var(--color-text);
   line-height: 1.6;
   min-height: 100dvh;
@@ -80,8 +82,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--color-accent); }
 /* Utility classes */
 .container { width: 100%; max-width: 480px; margin: 0 auto; padding: 0 var(--spacing-md); }
 .page { padding-top: var(--topbar-height); padding-bottom: calc(var(--nav-height) + var(--spacing-lg)); min-height: 100dvh; }
-.card { background: var(--color-surface); border-radius: var(--radius-md); padding: var(--spacing-lg); box-shadow: var(--shadow-sm); }
-.card-elevated { background: var(--color-bg-elevated); }
+.card { background: rgba(36, 52, 71, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: var(--radius-md); padding: var(--spacing-lg); box-shadow: var(--shadow-sm); border: 1px solid rgba(255, 255, 255, 0.05); }
+.card-elevated { background: rgba(31, 48, 68, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 24px; border: none; border-radius: var(--radius-sm); font-weight: 600; font-size: 1rem; min-height: 48px; min-width: 48px; transition: all var(--transition); }
 .btn:active { transform: scale(0.96); }
 .btn-primary { background: var(--color-accent); color: var(--color-text-inverse); }
@@ -119,7 +121,14 @@ input:focus, textarea:focus, select:focus { border-color: var(--color-accent); }
 .skeleton { background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-hover) 50%, var(--color-surface) 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-sm); }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 .fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-up { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scale-in { animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+.badge-recovery-fresh { background-color: rgba(0, 230, 118, 0.15); color: var(--color-success); padding: 4px 10px; border-radius: var(--border-radius-pill); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; }
+.badge-recovery-active { background-color: rgba(255, 179, 0, 0.15); color: var(--color-warning); padding: 4px 10px; border-radius: var(--border-radius-pill); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; }
+.badge-recovery-rest { background-color: rgba(255, 82, 82, 0.15); color: var(--color-error); padding: 4px 10px; border-radius: var(--border-radius-pill); font-size: var(--text-xs); font-weight: 600; display: inline-flex; align-items: center; }
 
 @media (min-width: 1024px) {
   .container { max-width: 640px; }

@@ -1,69 +1,85 @@
 'use client';
-import { useState } from 'react';
-import Card from '@/components/ui/Card';
-import Button from '@/components/ui/Button';
-import Input from '@/components/ui/Input';
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 export default function AdminPage() {
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Alex M', email: 'alex@example.com', role: 'user' },
-    { id: 2, name: 'Sarah K', email: 'sarah@example.com', role: 'user' },
-    { id: 3, name: 'Admin', email: 'admin@forgefive.com', role: 'admin' },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
 
-  const [newUserEmail, setNewUserEmail] = useState('');
+  useEffect(() => {
+    async function loadUsers() {
+      try {
+        const data = await api.admin.getUsers();
+        setUsers(data || []);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadUsers();
+  }, []);
 
-  const inviteUser = (e) => {
+  const handleInvite = async (e) => {
     e.preventDefault();
-    if (newUserEmail) {
-      alert(`Invitation sent to ${newUserEmail}`);
-      setNewUserEmail('');
+    if (!email) return;
+    try {
+      await api.admin.createUser({ email, role: 'user' });
+      alert('Invitation envoyée à ' + email);
+      setEmail('');
+      // refresh users
+      const data = await api.admin.getUsers();
+      setUsers(data || []);
+    } catch (err) {
+      console.error(err);
+      alert('Erreur lors de l\'envoi');
     }
   };
 
   return (
-    <div>
-      <h2 style={{ marginBottom: '1.5rem' }}>Admin Dashboard</h2>
-      
-      <Card style={{ marginBottom: '2rem' }}>
-        <h3 style={{ marginBottom: '1rem' }}>Invite User</h3>
-        <form onSubmit={inviteUser} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
-          <div style={{ flex: 1 }}>
-            <Input 
-              label="Email Address" 
-              type="email" 
-              value={newUserEmail} 
-              onChange={e => setNewUserEmail(e.target.value)} 
-              required
-            />
-          </div>
-          <Button type="submit" style={{ width: 'auto' }}>Send Invite</Button>
-        </form>
-      </Card>
+    <div className="container page fade-in">
+      <h1 className="mb-lg">Administration</h1>
 
-      <h3 style={{ marginBottom: '1rem' }}>User Management</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-        {users.map(u => (
-          <Card key={u.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem' }}>
-            <div>
-              <div style={{ fontWeight: 'bold' }}>{u.name}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>{u.email}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ 
-                fontSize: '0.75rem', 
-                backgroundColor: u.role === 'admin' ? 'var(--color-secondary)' : 'var(--color-surface-light)',
-                padding: '0.25rem 0.5rem',
-                borderRadius: 'var(--border-radius-pill)',
-                color: u.role === 'admin' ? 'white' : 'var(--color-text)'
-              }}>
-                {u.role}
-              </span>
-              <button style={{ color: 'var(--color-error)' }}>Revoke</button>
-            </div>
-          </Card>
-        ))}
+      <div className="card mb-lg card-elevated">
+        <h2 className="mb-md">Inviter un utilisateur</h2>
+        <form onSubmit={handleInvite} className="flex-col gap-md">
+          <input 
+            type="email" 
+            placeholder="Adresse email" 
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <button type="submit" className="btn btn-primary w-full">
+            Envoyer l'invitation
+          </button>
+        </form>
       </div>
+
+      <section>
+        <h2 className="mb-md">Gestion des utilisateurs</h2>
+        {loading ? (
+          <div className="card skeleton" style={{ height: '200px' }}></div>
+        ) : (
+          <div className="flex-col gap-sm">
+            {users.map(u => (
+              <div key={u.id} className="card flex justify-between items-center" style={{ padding: '12px 16px' }}>
+                <div>
+                  <div className="font-heading">{u.email}</div>
+                  <div className="text-xs text-muted">Rôle: {u.role}</div>
+                </div>
+                {u.role !== 'admin' && (
+                  <button className="btn btn-danger text-xs" style={{ padding: '6px 12px', minHeight: 'auto' }}>
+                    Révoquer
+                  </button>
+                )}
+              </div>
+            ))}
+            {users.length === 0 && <div className="text-muted text-center">Aucun utilisateur.</div>}
+          </div>
+        )}
+      </section>
     </div>
   );
 }
