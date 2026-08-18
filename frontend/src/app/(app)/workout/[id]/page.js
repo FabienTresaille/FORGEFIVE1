@@ -8,32 +8,60 @@ export default function ActiveWorkoutPage() {
   const params = useParams();
   const sessionId = params?.id;
 
+  const [sessionTitle, setSessionTitle] = useState('Séance d\'entraînement');
   const [seconds, setSeconds] = useState(0);
   const [isTimerActive, setIsTimerActive] = useState(true);
-  const [exercises, setExercises] = useState([
-    {
-      id: 1,
-      name: 'Développé Couché',
-      sets: [
-        { setNumber: 1, weight: 80, reps: 10, completed: false },
-        { setNumber: 2, weight: 80, reps: 10, completed: false },
-        { setNumber: 3, weight: 85, reps: 8, completed: false }
-      ]
-    },
-    {
-      id: 2,
-      name: 'Développé Incliné Haltères',
-      sets: [
-        { setNumber: 1, weight: 30, reps: 12, completed: false },
-        { setNumber: 2, weight: 30, reps: 10, completed: false }
-      ]
-    }
-  ]);
-
+  const [exercises, setExercises] = useState([]);
   const [allDbExercises, setAllDbExercises] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [finishing, setFinishing] = useState(false);
 
+  // Load active workout plan (from AI daily workout or routine)
+  useEffect(() => {
+    try {
+      const savedPlan = localStorage.getItem('active_workout_plan');
+      if (savedPlan) {
+        const parsed = JSON.parse(savedPlan);
+        if (parsed.title) setSessionTitle(parsed.title);
+        if (parsed.exercises && parsed.exercises.length > 0) {
+          const formatted = parsed.exercises.map((ex, idx) => {
+            const numSets = parseInt(ex.sets) || 3;
+            const targetReps = ex.reps || '10';
+            return {
+              id: idx + 1,
+              name: ex.name,
+              sets: Array.from({ length: numSets }, (_, sIdx) => ({
+                setNumber: sIdx + 1,
+                weight: 0,
+                reps: parseInt(targetReps) || 10,
+                targetReps: targetReps,
+                completed: false
+              }))
+            };
+          });
+          setExercises(formatted);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load saved workout plan:', e);
+    }
+
+    // Default fallback exercises if starting a blank session
+    setExercises([
+      {
+        id: 1,
+        name: 'Développé Couché',
+        sets: [
+          { setNumber: 1, weight: 60, reps: 10, completed: false },
+          { setNumber: 2, weight: 60, reps: 10, completed: false },
+          { setNumber: 3, weight: 60, reps: 10, completed: false }
+        ]
+      }
+    ]);
+  }, []);
+
+  // Timer
   useEffect(() => {
     let interval = null;
     if (isTimerActive) {
@@ -44,6 +72,7 @@ export default function ActiveWorkoutPage() {
     return () => clearInterval(interval);
   }, [isTimerActive]);
 
+  // Load DB exercises for the modal
   useEffect(() => {
     async function loadDbExercises() {
       try {
@@ -80,7 +109,7 @@ export default function ActiveWorkoutPage() {
     const newSetNumber = updated[exIndex].sets.length + 1;
     updated[exIndex].sets.push({
       setNumber: newSetNumber,
-      weight: lastSet ? lastSet.weight : 50,
+      weight: lastSet ? lastSet.weight : 0,
       reps: lastSet ? lastSet.reps : 10,
       completed: false
     });
@@ -94,9 +123,9 @@ export default function ActiveWorkoutPage() {
         id: exercise.id || Date.now(),
         name: exercise.name,
         sets: [
-          { setNumber: 1, weight: 60, reps: 10, completed: false },
-          { setNumber: 2, weight: 60, reps: 10, completed: false },
-          { setNumber: 3, weight: 60, reps: 10, completed: false }
+          { setNumber: 1, weight: 0, reps: 10, completed: false },
+          { setNumber: 2, weight: 0, reps: 10, completed: false },
+          { setNumber: 3, weight: 0, reps: 10, completed: false }
         ]
       }
     ]);
@@ -116,6 +145,9 @@ export default function ActiveWorkoutPage() {
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      // Clear plan after finishing
+      localStorage.removeItem('active_workout_plan');
     }
 
     router.push('/dashboard');
@@ -139,7 +171,7 @@ export default function ActiveWorkoutPage() {
       }}>
         <div>
           <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--color-accent)', fontWeight: 700, letterSpacing: '0.05em' }}>
-            ⚡ Séance en cours
+            ⚡ {sessionTitle}
           </span>
           <div style={{ fontSize: '1.5rem', fontFamily: 'var(--font-heading)', fontWeight: 700 }}>
             ⏱️ {formatTime(seconds)}
@@ -159,7 +191,7 @@ export default function ActiveWorkoutPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {exercises.map((ex, exIndex) => (
           <div key={exIndex} className="card card-elevated" style={{ padding: '16px' }}>
-            <h3 className="font-heading" style={{ color: 'var(--color-text)', marginBottom: '12px' }}>
+            <h3 className="font-heading" style={{ color: 'var(--color-accent)', marginBottom: '12px' }}>
               {ex.name}
             </h3>
 
@@ -195,12 +227,14 @@ export default function ActiveWorkoutPage() {
                     value={set.weight}
                     onChange={(e) => updateSetValue(exIndex, setIndex, 'weight', parseFloat(e.target.value) || 0)}
                     style={{ textAlign: 'center', padding: '6px', fontSize: '0.95rem' }}
+                    placeholder="kg"
                   />
                   <input
                     type="number"
                     value={set.reps}
                     onChange={(e) => updateSetValue(exIndex, setIndex, 'reps', parseInt(e.target.value) || 0)}
                     style={{ textAlign: 'center', padding: '6px', fontSize: '0.95rem' }}
+                    placeholder="reps"
                   />
                   <button
                     onClick={() => toggleSetComplete(exIndex, setIndex)}

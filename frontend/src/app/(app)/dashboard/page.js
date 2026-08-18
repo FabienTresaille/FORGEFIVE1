@@ -40,18 +40,26 @@ export default function DashboardPage() {
     setLaunching(true);
     try {
       const workoutTitle = dailyWorkout?.title || 'Séance du Jour IA';
+      
+      // Save AI exercises into active workout plan in localStorage
+      if (dailyWorkout && dailyWorkout.exercises && dailyWorkout.exercises.length > 0) {
+        localStorage.setItem('active_workout_plan', JSON.stringify({
+          title: workoutTitle,
+          exercises: dailyWorkout.exercises,
+          focus_muscles: dailyWorkout.focus_muscles || []
+        }));
+      }
+
       const workout = await api.workouts.create({
         notes: workoutTitle,
         date: new Date().toISOString()
-      });
-      if (workout && workout.id) {
-        router.push(`/workout/${workout.id}`);
-      } else {
-        router.push('/workout');
-      }
+      }).catch(() => null);
+
+      const targetId = (workout && workout.id) ? workout.id : 'ia-session';
+      router.push(`/workout/${targetId}`);
     } catch (err) {
-      console.error('Error starting workout:', err);
-      router.push('/workout');
+      console.error('Error launching workout:', err);
+      router.push('/workout/ia-session');
     } finally {
       setLaunching(false);
     }
@@ -107,7 +115,7 @@ export default function DashboardPage() {
               onClick={handleLaunchWorkout}
               disabled={launching}
             >
-              {launching ? 'Démarrage...' : 'Lancer cette séance'}
+              {launching ? 'Chargement de la séance...' : 'Lancer cette séance'}
             </button>
           </div>
         ) : (

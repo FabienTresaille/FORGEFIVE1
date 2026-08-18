@@ -27,15 +27,14 @@ export default function WorkoutPage() {
     if (starting) return;
     setStarting(true);
     try {
+      localStorage.removeItem('active_workout_plan');
       const workout = await api.workouts.create({
         notes: 'Séance libre',
         date: new Date().toISOString()
-      });
-      if (workout && workout.id) {
-        router.push(`/workout/${workout.id}`);
-      } else {
-        router.push(`/workout/${Date.now()}`);
-      }
+      }).catch(() => null);
+
+      const targetId = (workout && workout.id) ? workout.id : Date.now();
+      router.push(`/workout/${targetId}`);
     } catch (error) {
       console.error(error);
       router.push(`/workout/${Date.now()}`);
@@ -48,15 +47,18 @@ export default function WorkoutPage() {
     if (starting) return;
     setStarting(true);
     try {
+      localStorage.setItem('active_workout_plan', JSON.stringify({
+        title: routine.name || 'Programme',
+        exercises: routine.exercises || []
+      }));
+
       const workout = await api.workouts.create({
         notes: routine.name || 'Séance routine',
         date: new Date().toISOString()
-      });
-      if (workout && workout.id) {
-        router.push(`/workout/${workout.id}`);
-      } else {
-        router.push(`/workout/${routine.id || Date.now()}`);
-      }
+      }).catch(() => null);
+
+      const targetId = (workout && workout.id) ? workout.id : (routine.id || Date.now());
+      router.push(`/workout/${targetId}`);
     } catch (error) {
       console.error(error);
       router.push(`/workout/${routine.id || Date.now()}`);
