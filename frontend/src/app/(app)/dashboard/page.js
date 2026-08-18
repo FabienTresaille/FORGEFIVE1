@@ -7,102 +7,119 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const [streak, setStreak] = useState(0);
   const [dailyWorkout, setDailyWorkout] = useState(null);
-  const [dailyTip, setDailyTip] = useState(null);
+  const [dailyTip, setDailyTip] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [streakData, workoutData, tipData] = await Promise.all([
-          api.gamification?.getStreak ? api.gamification.getStreak() : Promise.resolve(0),
-          api.coach?.getDailyWorkout ? api.coach.getDailyWorkout() : Promise.resolve(null),
-          api.coach?.getDailyTip ? api.coach.getDailyTip() : Promise.resolve(null)
-        ]);
-        setStreak(streakData || 0);
-        setDailyWorkout(workoutData);
-        setDailyTip(tipData);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
+        const streakRes = await api.gamification.getStreak().catch(() => null);
+        setStreak(streakRes?.current_streak || streakRes?.streak || (typeof streakRes === 'number' ? streakRes : 0));
+      } catch (e) { /* silent */ }
+
+      try {
+        const workoutRes = await api.coach.getDailyWorkout().catch(() => null);
+        setDailyWorkout(workoutRes);
+      } catch (e) { /* silent */ }
+
+      try {
+        const tipRes = await api.coach.getDailyTip().catch(() => null);
+        setDailyTip(tipRes?.tip || '');
+      } catch (e) { /* silent */ }
+
+      setLoading(false);
     }
     loadData();
   }, []);
 
   return (
     <div className="container page fade-in">
-      <header className="flex justify-between items-center mb-lg">
+      <header className="flex justify-between items-center" style={{ marginBottom: '24px' }}>
         <div>
-          <h1 className="text-lg text-muted">Bonjour,</h1>
-          <h2 className="text-accent font-heading">{user?.display_name || user?.name || 'Athlète'}</h2>
+          <p style={{ fontSize: '1rem', color: 'var(--color-text-muted)', margin: 0 }}>Bonjour,</p>
+          <h1 style={{ fontSize: '1.75rem', color: 'var(--color-accent)', margin: 0 }}>
+            {user?.display_name || user?.name || 'Athlète'}
+          </h1>
         </div>
-        <div className="card" style={{ padding: '8px 16px', borderRadius: 'var(--border-radius-pill)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="text-secondary font-mono">🔥 {streak}</span>
-          <span className="text-xs">Jours</span>
+        <div className="card" style={{ padding: '8px 16px', borderRadius: '9999px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ color: 'var(--color-secondary)', fontWeight: 700 }}>🔥 {streak}</span>
+          <span style={{ fontSize: '0.75rem' }}>Jours</span>
         </div>
       </header>
 
-      <section className="mb-lg">
-        <h3 className="mb-md">Séance du Jour IA</h3>
+      {/* Séance IA du Jour */}
+      <section style={{ marginBottom: '24px' }}>
+        <h3 style={{ marginBottom: '16px' }}>Séance du Jour IA</h3>
         {loading ? (
           <div className="card skeleton" style={{ height: '200px' }}></div>
-        ) : dailyWorkout ? (
-          <div className="card card-elevated animate-scale-in">
-            <p className="text-sm mb-md">{dailyWorkout.recovery_note || 'Basé sur votre récupération, voici une séance adaptée.'}</p>
+        ) : dailyWorkout && dailyWorkout.exercises ? (
+          <div className="card" style={{ background: 'rgba(31, 48, 68, 0.85)' }}>
+            <p style={{ fontSize: '0.875rem', marginBottom: '16px', color: 'var(--color-text-muted)' }}>
+              {dailyWorkout.recovery_note || 'Basé sur votre récupération, voici une séance adaptée.'}
+            </p>
             
-            <div className="flex gap-sm mb-md" style={{ flexWrap: 'wrap' }}>
-              <span className="badge-recovery-fresh">🟢 Pectoraux</span>
-              <span className="badge-recovery-active">🟠 Épaules</span>
-              <span className="badge-recovery-rest">🔴 Jambes</span>
-            </div>
+            {dailyWorkout.focus_muscles && (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {dailyWorkout.focus_muscles.map((m, i) => (
+                  <span key={i} className="badge-recovery-fresh">🟢 {m}</span>
+                ))}
+              </div>
+            )}
 
-            <div className="flex-col gap-sm mb-lg">
-              {(dailyWorkout.exercises || [{name: 'Développé Couché', sets: 4, reps: '8-10'}, {name: 'Tractions', sets: 3, reps: 'Max'}]).map((ex, i) => (
-                <div key={i} className="flex justify-between items-center" style={{ padding: '8px', background: 'var(--color-surface)', borderRadius: 'var(--radius-sm)' }}>
-                  <span className="font-heading">{ex.name}</span>
-                  <span className="text-sm text-muted">{ex.sets} séries x {ex.reps}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+              {dailyWorkout.exercises.map((ex, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: 'var(--color-surface)', borderRadius: '8px' }}>
+                  <span style={{ fontFamily: 'var(--font-heading)', fontWeight: 500 }}>{ex.name}</span>
+                  <span style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{ex.sets}x{ex.reps}</span>
                 </div>
               ))}
             </div>
 
-            <button className="btn btn-primary btn-full text-lg">Lancer cette séance</button>
+            <button className="btn btn-primary btn-full" style={{ fontSize: '1.1rem' }}>
+              Lancer cette séance
+            </button>
           </div>
         ) : (
-          <div className="card text-center">
-            <p className="text-muted mb-md">Aucune séance générée pour aujourd'hui.</p>
-            <button className="btn btn-primary">Générer une séance</button>
+          <div className="card" style={{ textAlign: 'center' }}>
+            <p style={{ color: 'var(--color-text-muted)', marginBottom: '16px' }}>
+              Renseignez votre profil pour recevoir des séances personnalisées.
+            </p>
+            <button className="btn btn-primary" onClick={() => window.location.href = '/profile'}>
+              Compléter mon profil
+            </button>
           </div>
         )}
       </section>
 
-      <section className="mb-lg">
+      {/* Conseil du Coach IA */}
+      <section style={{ marginBottom: '24px' }}>
         <div className="card" style={{ borderLeft: '4px solid var(--color-accent)' }}>
-          <h3 className="text-accent mb-sm flex items-center gap-sm">
+          <h3 style={{ color: 'var(--color-accent)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             🤖 Conseil du Coach IA
           </h3>
-          <p className="text-sm text-muted">
-            {dailyTip || "Pensez à bien vous hydrater. Prenez le temps de vous étirer après l'effort pour maximiser votre récupération."}
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', margin: 0 }}>
+            {dailyTip || "Pensez à bien vous hydrater et à vous étirer après l'effort pour maximiser votre récupération."}
           </p>
         </div>
       </section>
 
+      {/* Activité Récente */}
       <section>
-        <h3 className="mb-md">Activité Récente</h3>
-        <div className="flex-col gap-md">
+        <h3 style={{ marginBottom: '16px' }}>Activité Récente</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           <div className="card">
-            <div className="flex justify-between items-center mb-sm">
-              <strong className="text-lg font-heading">Haut du Corps</strong>
-              <span className="text-xs text-muted">Hier</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>Haut du Corps</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Hier</span>
             </div>
-            <p className="text-sm text-muted">14 séries • 45 min • 12,450 kg</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>14 séries • 45 min • 12 450 kg</p>
           </div>
           <div className="card">
-            <div className="flex justify-between items-center mb-sm">
-              <strong className="text-lg font-heading">Jambes (Force)</strong>
-              <span className="text-xs text-muted">Il y a 3 jours</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <strong style={{ fontSize: '1.1rem', fontFamily: 'var(--font-heading)' }}>Jambes (Force)</strong>
+              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Il y a 3 jours</span>
             </div>
-            <p className="text-sm text-muted">16 séries • 55 min • 14,200 kg</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>16 séries • 55 min • 14 200 kg</p>
           </div>
         </div>
       </section>
